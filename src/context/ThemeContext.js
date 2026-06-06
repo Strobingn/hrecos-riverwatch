@@ -3,8 +3,8 @@
 // Provides dark/light mode management with AsyncStorage persistence
 // ============================================================================
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { useColorScheme } from 'react-native';
+import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { useColorScheme, View, ActivityIndicator, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SHADOWS, SPACING, FONTS, RADIUS, DARK_THEME } from '../theme';
 
@@ -88,11 +88,27 @@ export function ThemeProvider({ children }) {
   );
 
   if (!isLoaded) {
-    // Return a placeholder during initial load to prevent flash
-    return null;
+    // Render a neutral placeholder instead of null so the native splash screen
+    // can be dismissed and React doesn't leave the app in a blank state.
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0A7EA4" />
+      </View>
+    );
   }
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F0F4F8',
+  },
+});
+
+export { useTheme } from '../hooks/useTheme';
 
 export default ThemeContext;

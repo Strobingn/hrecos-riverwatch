@@ -3,15 +3,21 @@
 // Hudson River environmental monitoring mobile application
 // ============================================================================
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { StatusBar, View, ActivityIndicator, StyleSheet, LogBox, Platform } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { registerRootComponent } from 'expo';
 import * as Notifications from 'expo-notifications';
+import * as SplashScreen from 'expo-splash-screen';
 
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
+
+// Keep the native splash screen visible until we explicitly hide it.
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* ignore failures on platforms where this is a no-op */
+});
 
 // =============================================================================
 // SUPPRESS WARNINGS
@@ -137,7 +143,19 @@ function NotificationManager() {
 
 function AppContent() {
   const [isReady, setIsReady] = useState(false);
-  const { colors, isDark } = useTheme();
+  const [appError, setAppError] = useState(null);
+  const theme = useTheme();
+  const { colors, isDark } = theme;
+
+  const onLayoutRootView = useCallback(async () => {
+    if (isReady) {
+      try {
+        await SplashScreen.hideAsync();
+      } catch (e) {
+        console.warn('SplashScreen.hideAsync failed:', e);
+      }
+    }
+  }, [isReady]);
 
   useEffect(() => {
     let cancelled = false;
@@ -148,7 +166,10 @@ function AppContent() {
         if (!cancelled) setIsReady(true);
       } catch (error) {
         console.warn('App preparation failed:', error);
-        if (!cancelled) setIsReady(true);
+        if (!cancelled) {
+          setAppError(error);
+          setIsReady(true);
+        }
       }
     }
 
@@ -161,7 +182,7 @@ function AppContent() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={onLayoutRootView}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={colors.surface}

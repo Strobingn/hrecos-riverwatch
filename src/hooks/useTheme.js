@@ -12,14 +12,10 @@ import { ThemeContext } from '../context/ThemeContext';
 /**
  * Hook for accessing the app's theme context.
  *
- * @returns {Object} {
- *   colors: Theme color palette (primary, background, text, etc.),
- *   isDark: boolean indicating dark mode is active,
- *   toggleTheme: function to toggle between light/dark modes,
- *   setTheme: function to explicitly set the theme mode,
- * }
- *
- * @throws {Error} If used outside of a ThemeContext.Provider.
+ * @returns {Object} Theme object containing colors, spacing, fonts, shadows,
+ *   radius, isDark, plus toggleTheme/setDarkMode helpers. Also exposes a
+ *   `theme` alias so both `const theme = useTheme()` and `const { theme } = useTheme()`
+ *   work correctly.
  */
 export function useTheme() {
   const context = useContext(ThemeContext);
@@ -31,7 +27,14 @@ export function useTheme() {
     );
   }
 
-  return context;
+  // Flatten the theme object for convenient direct access (theme.colors)
+  // while preserving the nested `theme` alias for destructuring compatibility.
+  return {
+    theme: context.theme,
+    ...context.theme,
+    toggleTheme: context.toggleTheme,
+    setDarkMode: context.setDarkMode,
+  };
 }
 
 export default useTheme;
